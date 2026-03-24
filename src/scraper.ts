@@ -122,10 +122,12 @@ export async function scrapeEDT(
     );
 
     const firstUrl = getEdtUrl(username, startDate);
-    await page.goto(firstUrl, { waitUntil: "networkidle" });
+    await page.goto(firstUrl, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(2000);
 
     if (await isOnCASLogin(page)) {
       await authenticateCAS(page, username, password);
+      await page.waitForTimeout(2000);
       await context.storageState({ path: AUTH_STATE_PATH });
       console.log("[scraper] Session saved");
     }
@@ -137,16 +139,18 @@ export async function scrapeEDT(
       const url = getEdtUrl(username, weekDate);
 
       if (i > 0) {
-        await page.goto(url, { waitUntil: "networkidle" });
+        await page.goto(url, { waitUntil: "domcontentloaded" });
+        await page.waitForTimeout(2000);
 
         if (await isOnCASLogin(page)) {
           console.log("[scraper] Session expired, re-authenticating...");
           await authenticateCAS(page, username, password);
+          await page.waitForTimeout(2000);
           await context.storageState({ path: AUTH_STATE_PATH });
         }
       }
 
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(1000);
 
       const html = await page.content();
       results.push({ html, url, weekOf: weekDate });
