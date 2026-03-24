@@ -60,7 +60,10 @@ switch (command) {
 
   case "serve": {
     const { port } = getConfig();
-    startServer(port, runScrape);
+    startServer(port, async () => {
+      await runScrape();
+      await publishToGhPages();
+    });
     break;
   }
 
