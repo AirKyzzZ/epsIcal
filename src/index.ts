@@ -6,6 +6,7 @@ import { scrapeEDT } from "./scraper.js";
 import { parseEdtHtml, deduplicateEvents } from "./parser.js";
 import { generateIcal } from "./generator.js";
 import { startServer } from "./server.js";
+import { publishToGhPages } from "./publish.js";
 
 const DATA_DIR = path.join(import.meta.dirname, "..", "data");
 const CALENDAR_PATH = path.join(DATA_DIR, "calendar.ics");
@@ -53,6 +54,7 @@ const command = process.argv[2];
 switch (command) {
   case "scrape": {
     await runScrape();
+    await publishToGhPages();
     break;
   }
 
