@@ -1,0 +1,28 @@
+{
+  "name": "epsical",
+  "version": "1.0.0",
+  "description": "Sync your EPSI school schedule to Apple Calendar, Google Calendar, or any iCal-compatible app",
+  "type": "module",
+  "scripts": {
+    "scrape": "tsx src/index.ts scrape",
+    "serve": "tsx src/index.ts serve",
+    "start": "tsx src/index.ts serve",
+    "dev": "tsx watch src/index.ts serve"
+  },
+  "keywords": ["epsi", "ical", "calendar", "edt", "wigor", "schedule"],
+  "author": "Maxime Mansiet",
+  "license": "MIT",
+  "dependencies": {
+    "@hono/node-server": "^1.19.11",
+    "cheerio": "^1.2.0",
+    "dotenv": "^17.3.1",
+    "hono": "^4.12.9",
+    "ical-generator": "^10.1.0",
+    "playwright": "^1.58.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
