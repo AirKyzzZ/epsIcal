@@ -114,8 +114,7 @@ export async function scrapeEDT(
       (endDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
     );
 
-    // Each page shows 2 weeks, so request every 2 weeks for efficiency
-    const requests = Math.ceil(totalWeeks / 2);
+    const requests = totalWeeks;
 
     console.log(
       `[scraper] Scraping full school year: ${startDate.toISOString().split("T")[0]} → ${endDate.toISOString().split("T")[0]} (~${totalWeeks} weeks, ${requests} requests)`
@@ -133,7 +132,7 @@ export async function scrapeEDT(
     }
 
     for (let i = 0; i < requests; i++) {
-      const weekDate = addWeeks(startDate, i * 2);
+      const weekDate = addWeeks(startDate, i);
       if (weekDate > endDate) break;
 
       const url = getEdtUrl(username, weekDate);
