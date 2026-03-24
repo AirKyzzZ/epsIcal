@@ -31,42 +31,27 @@ const FRENCH_MONTHS: Record<string, number> = {
   decembre: 11,
 };
 
-/** Column left% → column index mapping thresholds */
-const DAY_COLUMNS = [
-  { min: 0, max: 20, weekOffset: 0, dayIndex: 0 }, // Mon week 1
-  { min: 20, max: 39, weekOffset: 0, dayIndex: 1 }, // Tue week 1
-  { min: 39, max: 58, weekOffset: 0, dayIndex: 2 }, // Wed week 1
-  { min: 58, max: 78, weekOffset: 0, dayIndex: 3 }, // Thu week 1
-  { min: 78, max: 98, weekOffset: 0, dayIndex: 4 }, // Fri week 1
-  { min: 98, max: 120, weekOffset: 1, dayIndex: 0 }, // Mon week 2
-  { min: 120, max: 139, weekOffset: 1, dayIndex: 1 }, // Tue week 2
-  { min: 139, max: 158, weekOffset: 1, dayIndex: 2 }, // Wed week 2
-  { min: 158, max: 178, weekOffset: 1, dayIndex: 3 }, // Thu week 2
-  { min: 178, max: 200, weekOffset: 1, dayIndex: 4 }, // Fri week 2
-];
-
-function parseFrenchDate(
-  text: string,
-  referenceYear: number
-): { day: number; month: number } | null {
+function parseFrenchDate(text: string): { day: number; month: number } | null {
   // "Lundi 2 Mars" or "Vendredi 27 Février"
-  const match = text.match(/\d+\s+(\S+)/);
-  if (!match) return null;
-
   const dayMatch = text.match(/(\d+)/);
-  if (!dayMatch) return null;
+  const wordMatch = text.match(/\d+\s+(\S+)/);
+  if (!dayMatch || !wordMatch) return null;
 
   const day = parseInt(dayMatch[1], 10);
-  const monthName = match[1].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const monthRaw = wordMatch[1]
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 
-  const month = FRENCH_MONTHS[monthName];
+  // Exact match first
+  let month = FRENCH_MONTHS[monthRaw];
   if (month === undefined) {
-    // Try partial match
+    // Partial match (first 3 chars)
     const entry = Object.entries(FRENCH_MONTHS).find(([key]) =>
-      key.startsWith(monthName.slice(0, 3))
+      key.startsWith(monthRaw.slice(0, 3))
     );
     if (!entry) return null;
-    return { day, month: entry[1] };
+    month = entry[1];
   }
 
   return { day, month };
@@ -77,12 +62,6 @@ function parseLeftPercent(style: string): number | null {
   return match ? parseFloat(match[1]) : null;
 }
 
-function findDayColumn(leftPercent: number) {
-  return DAY_COLUMNS.find(
-    (col) => leftPercent >= col.min && leftPercent < col.max
-  );
-}
-
 export function parseEdtHtml(
   html: string,
   requestedDate: Date
@@ -90,10 +69,11 @@ export function parseEdtHtml(
   const $ = cheerio.load(html);
   const events: EdtEvent[] = [];
   const year = requestedDate.getFullYear();
+  const requestedMonth = requestedDate.getMonth();
 
-  // Parse day headers to build date mapping
-  // Structure: { weekOffset: number, dayIndex: number } → Date
-  const dayDates = new Map<string, Date>();
+  // Step 1: Parse all day headers (.Jour) to build a leftPercent → Date map
+  // This replaces the old hardcoded DAY_COLUMNS thresholds entirely.
+  const headerColumns: { left: number; date: Date }[] = [];
 
   $(".Jour").each((_, el) => {
     const style = $(el).attr("style") || "";
@@ -101,29 +81,79 @@ export function parseEdtHtml(
     if (left === null) return;
 
     const headerText = $(el).find(".TCJour").text().trim();
-    const parsed = parseFrenchDate(headerText, year);
+    const parsed = parseFrenchDate(headerText);
     if (!parsed) return;
 
-    const col = findDayColumn(left);
-    if (!col) return;
+    // Handle year rollover: requestedDate in December but header is January → next year
+    let eventYear = year;
+    if (requestedMonth === 11 && parsed.month === 0) {
+      eventYear = year + 1;
+    }
+    // Handle rollover the other way (shouldn't normally happen but be safe)
+    if (requestedMonth === 0 && parsed.month === 11) {
+      eventYear = year - 1;
+    }
 
-    const key = `${col.weekOffset}-${col.dayIndex}`;
-    const date = new Date(year, parsed.month, parsed.day);
-    dayDates.set(key, date);
+    const date = new Date(eventYear, parsed.month, parsed.day);
+    headerColumns.push({ left, date });
   });
 
-  // Parse events
+  // Sort by left% ascending
+  headerColumns.sort((a, b) => a.left - b.left);
+
+  if (headerColumns.length === 0) {
+    console.warn("[parser] No day headers found — HTML may have changed structure");
+    return events;
+  }
+
+  // DEBUG: Log headers for March 16 request
+  const reqDateStr = requestedDate.toISOString().split('T')[0];
+  if (reqDateStr === '2026-03-16') {
+    console.log(`[parser DEBUG] Request date: ${reqDateStr}`);
+    console.log(`[parser DEBUG] Found ${headerColumns.length} headers:`);
+    headerColumns.forEach(col => {
+      console.log(`  - left=${col.left}% → ${col.date.toISOString().split('T')[0]}`);
+    });
+  }
+
+  // Step 2: For each event, find the closest header by left%
+  function findClosestDate(leftPercent: number): Date | null {
+    if (headerColumns.length === 0) return null;
+    let closest = headerColumns[0];
+    let minDiff = Math.abs(leftPercent - closest.left);
+    for (const col of headerColumns) {
+      const diff = Math.abs(leftPercent - col.left);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = col;
+      }
+    }
+    return closest.date;
+  }
+
+  // Step 3: Parse events
+  let debugTotal = 0;
+  let debugNoLeft = 0;
+  let debugNoTime = 0;
+  const debugByDate: Record<string, number> = {};
+  
   $(".Case").each((_, el) => {
+    debugTotal++;
     const style = $(el).attr("style") || "";
     const left = parseLeftPercent(style);
-    if (left === null) return;
+    if (left === null) { debugNoLeft++; return; }
 
-    const col = findDayColumn(left);
-    if (!col) return;
-
-    const key = `${col.weekOffset}-${col.dayIndex}`;
-    const eventDate = dayDates.get(key);
+    const eventDate = findClosestDate(left);
     if (!eventDate) return;
+    
+    const dateKey = eventDate.toISOString().split('T')[0];
+    debugByDate[dateKey] = (debugByDate[dateKey] || 0) + 1;
+    
+    if (reqDateStr === '2026-03-16' && left > 200) {
+      const timeText2 = $(el).find("td.TChdeb").text().trim();
+      const courseText = $(el).find("td.TCase").text().trim().slice(0, 30);
+      console.log(`[parser DEBUG] Case left=${left}% → ${dateKey} time="${timeText2}" course="${courseText}"`);
+    }
 
     // Course name: text content of td.TCase, stripped of Teams links
     const courseTd = $(el).find("td.TCase");
@@ -194,6 +224,12 @@ export function parseEdtHtml(
     });
   });
 
+  if (reqDateStr === '2026-03-16') {
+    console.log(`[parser DEBUG] Total .Case: ${debugTotal}, noLeft: ${debugNoLeft}, noTime: ${debugNoTime}`);
+    console.log(`[parser DEBUG] Events by date:`, JSON.stringify(debugByDate));
+    console.log(`[parser DEBUG] Final events returned: ${events.length}`);
+  }
+  
   return events;
 }
 
