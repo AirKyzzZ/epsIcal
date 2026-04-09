@@ -1,6 +1,5 @@
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { existsSync, mkdirSync } from "fs";
-import { writeFile } from "fs/promises";
 import path from "path";
 
 const DATA_DIR = path.join(import.meta.dirname, "..", "data");
@@ -8,7 +7,28 @@ const AUTH_STATE_PATH = path.join(DATA_DIR, "auth.json");
 
 const EDT_BASE_URL =
   "https://ws-edt-cd.wigorservices.net/WebPsDyn.aspx?action=posEDTLMS&serverID=C";
+const API_URL = "https://ws-edt-cd.wigorservices.net/Home/Get";
 const CAS_HOST = "cas-p.wigorservices.net";
+
+/**
+ * Raw event shape returned by /Home/Get. Only the fields we consume are typed;
+ * the API returns ~30 fields but we ignore the rest.
+ */
+export interface RawEdtItem {
+  Commentaire: string | null;
+  Title: string | null;
+  NomProf: string | null;
+  LibelleGroupe: string | null;
+  LibelleSemaine: string | null;
+  Matiere: string | null;
+  Salles: string | null;
+  CoursMixteInfoBulle: string | null;
+  TeamsUrl: string | null;
+  Start: string;
+  End: string;
+  IsAllDay: boolean;
+  Origine: number | null;
+}
 
 function ensureDataDir() {
   if (!existsSync(DATA_DIR)) {
@@ -16,47 +36,22 @@ function ensureDataDir() {
   }
 }
 
-function getEdtUrl(username: string, date?: Date): string {
-  let url = `${EDT_BASE_URL}&Tel=${username}`;
-  if (date) {
-    const mm = String(date.getMonth() + 1).padStart(2, "0");
-    const dd = String(date.getDate()).padStart(2, "0");
-    const yyyy = date.getFullYear();
-    url += `&date=${mm}/${dd}/${yyyy}`;
-  }
-  return url;
+function getEdtUrl(username: string): string {
+  return `${EDT_BASE_URL}&Tel=${username}`;
 }
 
-function getMonday(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function addWeeks(date: Date, weeks: number): Date {
-  const d = new Date(date);
-  d.setDate(d.getDate() + weeks * 7);
-  return d;
-}
-
-/** Returns the Monday of September 1st's week for the current school year */
+/** Returns September 1st of the current school year at 00:00 UTC. */
 function getSchoolYearStart(): Date {
   const now = new Date();
-  // School year starts in September
-  // If we're before September, it started last year's September
   const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
-  const sept1 = new Date(year, 8, 1); // September 1
-  return getMonday(sept1);
+  return new Date(Date.UTC(year, 8, 1));
 }
 
-/** Returns the Monday of July's last week for the current school year */
+/** Returns July 31 of the current school year end at 00:00 UTC. */
 function getSchoolYearEnd(): Date {
   const now = new Date();
   const year = now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear();
-  return new Date(year, 6, 31); // July 31
+  return new Date(Date.UTC(year, 6, 31));
 }
 
 async function authenticateCAS(
@@ -82,16 +77,58 @@ async function isOnCASLogin(page: Page): Promise<boolean> {
   return page.url().includes(CAS_HOST);
 }
 
-export interface ScrapeResult {
-  html: string;
-  url: string;
-  weekOf: Date;
+async function fetchRange(
+  page: Page,
+  dateDebut: Date,
+  dateFin: Date
+): Promise<RawEdtItem[]> {
+  const params = new URLSearchParams({
+    dateDebut: dateDebut.toISOString(),
+    dateFin: dateFin.toISOString(),
+  });
+
+  const result = await page.evaluate(async (url) => {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    });
+    return {
+      status: res.status,
+      contentType: res.headers.get("content-type") || "",
+      body: await res.text(),
+    };
+  }, `${API_URL}?${params}`);
+
+  if (result.status !== 200) {
+    throw new Error(
+      `[scraper] /Home/Get returned HTTP ${result.status}: ${result.body.slice(0, 200)}`
+    );
+  }
+
+  if (!result.contentType.includes("json")) {
+    throw new Error(
+      `[scraper] /Home/Get returned non-JSON (${result.contentType}). Session likely expired. First 200 chars: ${result.body.slice(0, 200)}`
+    );
+  }
+
+  const parsed = JSON.parse(result.body) as {
+    Data: RawEdtItem[];
+    Total: number;
+    Errors: unknown;
+  };
+
+  if (parsed.Errors) {
+    throw new Error(`[scraper] API returned errors: ${JSON.stringify(parsed.Errors)}`);
+  }
+
+  return parsed.Data ?? [];
 }
 
 export async function scrapeEDT(
   username: string,
   password: string
-): Promise<ScrapeResult[]> {
+): Promise<RawEdtItem[]> {
   ensureDataDir();
 
   const browser = await chromium.launch({ headless: true });
@@ -105,61 +142,49 @@ export async function scrapeEDT(
   }
 
   const page = await context.newPage();
-  const results: ScrapeResult[] = [];
 
   try {
     const startDate = getSchoolYearStart();
     const endDate = getSchoolYearEnd();
-    const totalWeeks = Math.ceil(
-      (endDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
-    );
-
-    const requests = totalWeeks;
 
     console.log(
-      `[scraper] Scraping full school year: ${startDate.toISOString().split("T")[0]} → ${endDate.toISOString().split("T")[0]} (~${totalWeeks} weeks, ${requests} requests)`
+      `[scraper] Fetching school year: ${startDate.toISOString().split("T")[0]} → ${endDate.toISOString().split("T")[0]}`
     );
 
-    const firstUrl = getEdtUrl(username, startDate);
-    await page.goto(firstUrl, { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(2000);
+    // Visit the EDT landing page first. This handles CAS redirect if the
+    // session has expired, and primes the cookies required by /Home/Get.
+    await page.goto(getEdtUrl(username), { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1000);
 
     if (await isOnCASLogin(page)) {
       await authenticateCAS(page, username, password);
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(1000);
       await context.storageState({ path: AUTH_STATE_PATH });
       console.log("[scraper] Session saved");
     }
 
-    for (let i = 0; i < requests; i++) {
-      const weekDate = addWeeks(startDate, i);
-      if (weekDate > endDate) break;
+    // Single API call for the whole school year (≈350 events, ~2s, ~750 KB).
+    let items = await fetchRange(page, startDate, endDate);
 
-      const url = getEdtUrl(username, weekDate);
-
-      if (i > 0) {
-        await page.goto(url, { waitUntil: "domcontentloaded" });
-        await page.waitForTimeout(2000);
-
-        if (await isOnCASLogin(page)) {
-          console.log("[scraper] Session expired, re-authenticating...");
-          await authenticateCAS(page, username, password);
-          await page.waitForTimeout(2000);
-          await context.storageState({ path: AUTH_STATE_PATH });
-        }
-      }
-
+    // If the session was actually expired server-side, the first request may
+    // redirect to CAS (returning HTML). fetchRange throws in that case — retry
+    // once after forcing a fresh login.
+    if (items.length === 0) {
+      console.log(
+        "[scraper] No events returned on first attempt, retrying after re-auth..."
+      );
+      await page.goto(getEdtUrl(username), { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(1000);
-
-      const html = await page.content();
-      results.push({ html, url, weekOf: weekDate });
-
-      const weekStr = weekDate.toISOString().split("T")[0];
-      console.log(`[scraper] Scraped week of ${weekStr} (${i + 1}/${requests})`);
+      if (await isOnCASLogin(page)) {
+        await authenticateCAS(page, username, password);
+        await context.storageState({ path: AUTH_STATE_PATH });
+      }
+      items = await fetchRange(page, startDate, endDate);
     }
+
+    console.log(`[scraper] Retrieved ${items.length} raw events`);
+    return items;
   } finally {
     await browser.close();
   }
-
-  return results;
 }

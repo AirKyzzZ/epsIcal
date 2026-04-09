@@ -14,12 +14,20 @@ export function generateIcal(events: EdtEvent[]): string {
     },
   });
 
+  const modalityLabel: Record<EdtEvent["modality"], string | null> = {
+    presential: "Présentiel",
+    remote: "Distanciel",
+    mixed: "Mixte",
+    unknown: null,
+  };
+
   for (const event of events) {
+    const mode = modalityLabel[event.modality];
     const description = [
       event.teacher && `Prof: ${event.teacher}`,
       event.group && `Groupe: ${event.group}`,
-      event.modality !== "unknown" &&
-        `Mode: ${event.modality === "presential" ? "Présentiel" : "Distanciel"}`,
+      mode && `Mode: ${mode}`,
+      event.teamsUrl && `Teams: ${event.teamsUrl}`,
     ]
       .filter(Boolean)
       .join("\n");

@@ -3,7 +3,7 @@ import { writeFile } from "fs/promises";
 import { existsSync, mkdirSync } from "fs";
 import path from "path";
 import { scrapeEDT } from "./scraper.js";
-import { parseEdtHtml, deduplicateEvents } from "./parser.js";
+import { parseEdtEvents, deduplicateEvents } from "./parser.js";
 import { generateIcal } from "./generator.js";
 import { startServer } from "./server.js";
 import { publishToGhPages } from "./publish.js";
@@ -32,9 +32,9 @@ async function runScrape() {
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
   console.log("[epsIcal] Starting scrape...");
-  const results = await scrapeEDT(username, password);
+  const rawItems = await scrapeEDT(username, password);
 
-  let allEvents = results.flatMap((r) => parseEdtHtml(r.html, r.weekOf));
+  let allEvents = parseEdtEvents(rawItems);
   allEvents = deduplicateEvents(allEvents);
 
   // Sort by date then start time
