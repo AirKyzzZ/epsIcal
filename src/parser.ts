@@ -25,6 +25,64 @@ function formatTime(date: Date): string {
   return fmt.format(date);
 }
 
+/**
+ * Returns the Europe/Paris UTC offset (in ms) for the given instant.
+ * Positive when Paris is ahead of UTC (CET = +1h, CEST = +2h).
+ */
+function parisOffsetAt(instant: Date): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Paris",
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(instant);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)!.value);
+  let hour = get("hour");
+  if (hour === 24) hour = 0; // Intl returns 24 for midnight in some locales
+  const parisAsUtc = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    hour,
+    get("minute"),
+    get("second")
+  );
+  return parisAsUtc - instant.getTime();
+}
+
+/**
+ * The Wigor `/Home/Get` API returns Start/End with an offset suffix that is
+ * intentionally misleading. The Kendo scheduler on wigorservices.net is
+ * configured with `timezone: "Etc/UTC"`, so students see the *UTC wall clock*
+ * of the raw instant — and they interpret that number as Paris local time.
+ *
+ * Example: a class that runs 10:00–12:00 Paris time comes back from the API
+ * as `"2026-04-07T12:00:00+02:00"`. That string parses to the instant
+ * `10:00Z` whose UTC wall clock reads "10:00" — matching what the UI shows.
+ *
+ * To emit a correct iCal DTSTART with `TZID=Europe/Paris`, we pull the UTC
+ * wall clock from the parsed instant and reinterpret it as Paris local time.
+ */
+function wigorTimeToParisInstant(raw: string): Date {
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return parsed;
+
+  const y = parsed.getUTCFullYear();
+  const mo = parsed.getUTCMonth();
+  const d = parsed.getUTCDate();
+  const h = parsed.getUTCHours();
+  const mi = parsed.getUTCMinutes();
+  const s = parsed.getUTCSeconds();
+
+  // Build the instant whose Europe/Paris projection reads (y, mo, d, h, mi, s).
+  const naive = new Date(Date.UTC(y, mo, d, h, mi, s));
+  return new Date(naive.getTime() - parisOffsetAt(naive));
+}
+
 function mapModality(raw: string | null): EdtEvent["modality"] {
   if (!raw) return "unknown";
   const v = raw.toLowerCase();
@@ -56,8 +114,8 @@ export function parseEdtEvents(items: RawEdtItem[]): EdtEvent[] {
   for (const item of items) {
     if (!item.Start || !item.End) continue;
 
-    const start = new Date(item.Start);
-    const end = new Date(item.End);
+    const start = wigorTimeToParisInstant(item.Start);
+    const end = wigorTimeToParisInstant(item.End);
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) continue;
 
     // Course title lives in Commentaire (the label displayed on the card).
