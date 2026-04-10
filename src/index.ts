@@ -42,6 +42,13 @@ async function runScrape() {
 
   console.log(`[epsIcal] ${allEvents.length} unique events found`);
 
+  if (allEvents.length === 0) {
+    throw new Error(
+      "[epsIcal] Scrape produced 0 events — refusing to overwrite calendar. " +
+        "Likely causes: expired CAS session, Wigor API change, or a parser regression."
+    );
+  }
+
   const ics = generateIcal(allEvents);
   await writeFile(CALENDAR_PATH, ics);
   console.log(`[epsIcal] Calendar saved to ${CALENDAR_PATH}`);

@@ -1,5 +1,5 @@
 import { execFileSync } from "child_process";
-import { existsSync, cpSync, mkdirSync, rmSync } from "fs";
+import { existsSync, cpSync, mkdirSync, readFileSync, rmSync } from "fs";
 import path from "path";
 
 const ROOT = path.join(import.meta.dirname, "..");
@@ -14,6 +14,17 @@ function run(cmd: string, args: string[], cwd: string = ROOT): string {
 export async function publishToGhPages() {
   if (!existsSync(CALENDAR_PATH)) {
     console.log("[publish] No calendar.ics to publish");
+    return;
+  }
+
+  // Refuse to publish an empty calendar — protects gh-pages from being wiped
+  // if the scraper ever produces a calendar without events.
+  const ics = readFileSync(CALENDAR_PATH, "utf-8");
+  const eventCount = (ics.match(/^BEGIN:VEVENT/gm) || []).length;
+  if (eventCount === 0) {
+    console.error(
+      "[publish] Refusing to publish calendar.ics with 0 events (would wipe gh-pages)"
+    );
     return;
   }
 
