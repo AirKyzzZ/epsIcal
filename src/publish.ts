@@ -41,8 +41,26 @@ export async function publishToGhPages() {
     // Clone just the gh-pages branch (shallow)
     run("git", ["clone", "--depth", "1", "--branch", "gh-pages", remoteUrl, PUBLISH_DIR]);
 
+    // Regression guard: if the currently-published calendar already has
+    // significantly MORE events than what we're about to push, refuse. This
+    // protects gh-pages from being trampled by a stale replica (e.g. a
+    // forgotten VPS running pre-Kendo-API code) whose scrapes quietly return
+    // a near-empty calendar but still pass the non-zero check.
+    const publishedPath = path.join(PUBLISH_DIR, "calendar.ics");
+    if (existsSync(publishedPath)) {
+      const publishedIcs = readFileSync(publishedPath, "utf-8");
+      const publishedCount = (publishedIcs.match(/^BEGIN:VEVENT/gm) || []).length;
+      if (publishedCount > 0 && eventCount < publishedCount * 0.5) {
+        console.error(
+          `[publish] Refusing to publish ${eventCount} events — remote currently has ${publishedCount}. ` +
+            `Aborting to protect gh-pages from regression.`
+        );
+        return;
+      }
+    }
+
     // Copy the calendar
-    cpSync(CALENDAR_PATH, path.join(PUBLISH_DIR, "calendar.ics"));
+    cpSync(CALENDAR_PATH, publishedPath);
 
     // Check if changed
     const status = run("git", ["status", "--porcelain"], PUBLISH_DIR);
