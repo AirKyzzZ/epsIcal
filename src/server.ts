@@ -1,13 +1,27 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
-import { readFile } from "fs/promises";
+import { readFile, stat } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 
 const DATA_DIR = path.join(import.meta.dirname, "..", "data");
 const CALENDAR_PATH = path.join(DATA_DIR, "calendar.ics");
 
-export function createServer(onRefresh?: () => Promise<void>) {
+export interface RefreshState {
+  status: "idle" | "running" | "ok" | "error";
+  startedAt: string | null;
+  finishedAt: string | null;
+  lastSuccessAt: string | null;
+  lastError: string | null;
+  lastErrorAt: string | null;
+  lastEventCount: number | null;
+  lastPublishError: string | null;
+}
+
+export function createServer(
+  onRefresh?: () => Promise<void>,
+  state?: RefreshState
+) {
   const app = new Hono();
 
   app.get("/calendar.ics", async (c) => {
@@ -23,18 +37,40 @@ export function createServer(onRefresh?: () => Promise<void>) {
     });
   });
 
-  app.get("/health", (c) => {
+  app.get("/health", async (c) => {
     const hasCalendar = existsSync(CALENDAR_PATH);
-    return c.json({ status: "ok", calendarGenerated: hasCalendar });
+    let calendarAgeSeconds: number | null = null;
+    let calendarBytes: number | null = null;
+    if (hasCalendar) {
+      try {
+        const s = await stat(CALENDAR_PATH);
+        calendarAgeSeconds = Math.round((Date.now() - s.mtimeMs) / 1000);
+        calendarBytes = s.size;
+      } catch {
+        // ignore
+      }
+    }
+    return c.json({
+      status: "ok",
+      calendarGenerated: hasCalendar,
+      calendarAgeSeconds,
+      calendarBytes,
+      refresh: state ?? null,
+    });
   });
 
+  app.get("/status", (c) => c.json(state ?? { status: "unknown" }));
+
   app.get("/refresh", async (c) => {
-    if (!onRefresh) {
-      return c.text("Refresh not configured", 501);
-    }
+    if (!onRefresh) return c.text("Refresh not configured", 501);
     try {
       await onRefresh();
-      return c.json({ status: "refreshed" });
+      return c.json({
+        status: "refreshed",
+        eventCount: state?.lastEventCount ?? null,
+        lastSuccessAt: state?.lastSuccessAt ?? null,
+        lastPublishError: state?.lastPublishError ?? null,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       return c.json({ status: "error", message }, 500);
@@ -51,6 +87,7 @@ export function createServer(onRefresh?: () => Promise<void>) {
           <ul>
             <li><a href="/calendar.ics">Download calendar.ics</a></li>
             <li><a href="/health">Health check</a></li>
+            <li><a href="/status">Refresh status</a></li>
             <li><a href="/refresh">Force refresh</a></li>
           </ul>
           <h2>Subscribe</h2>
@@ -64,8 +101,12 @@ export function createServer(onRefresh?: () => Promise<void>) {
   return app;
 }
 
-export function startServer(port: number, onRefresh?: () => Promise<void>) {
-  const app = createServer(onRefresh);
+export function startServer(
+  port: number,
+  onRefresh?: () => Promise<void>,
+  state?: RefreshState
+) {
+  const app = createServer(onRefresh, state);
 
   serve({ fetch: app.fetch, port }, () => {
     console.log(`[server] epsIcal running on http://localhost:${port}`);

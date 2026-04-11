@@ -1,5 +1,5 @@
-import { chromium, type BrowserContext, type Page } from "playwright";
-import { existsSync, mkdirSync } from "fs";
+import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
+import { existsSync, mkdirSync, rmSync } from "fs";
 import path from "path";
 
 const DATA_DIR = path.join(import.meta.dirname, "..", "data");
@@ -125,19 +125,18 @@ async function fetchRange(
   return parsed.Data ?? [];
 }
 
-export async function scrapeEDT(
+async function attemptScrape(
+  browser: Browser,
   username: string,
-  password: string
+  password: string,
+  useSavedSession: boolean
 ): Promise<RawEdtItem[]> {
-  ensureDataDir();
-
-  const browser = await chromium.launch({ headless: true });
-
   let context: BrowserContext;
-  if (existsSync(AUTH_STATE_PATH)) {
+  if (useSavedSession && existsSync(AUTH_STATE_PATH)) {
     console.log("[scraper] Reusing saved session...");
     context = await browser.newContext({ storageState: AUTH_STATE_PATH });
   } else {
+    console.log("[scraper] Starting with fresh context");
     context = await browser.newContext();
   }
 
@@ -152,7 +151,7 @@ export async function scrapeEDT(
     );
 
     // Visit the EDT landing page first. This handles CAS redirect if the
-    // session has expired, and primes the cookies required by /Home/Get.
+    // session has expired and primes the cookies required by /Home/Get.
     await page.goto(getEdtUrl(username), { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(1000);
 
@@ -163,27 +162,37 @@ export async function scrapeEDT(
       console.log("[scraper] Session saved");
     }
 
-    // Single API call for the whole school year (≈350 events, ~2s, ~750 KB).
-    let items = await fetchRange(page, startDate, endDate);
-
-    // If the session was actually expired server-side, the first request may
-    // redirect to CAS (returning HTML). fetchRange throws in that case — retry
-    // once after forcing a fresh login.
-    if (items.length === 0) {
-      console.log(
-        "[scraper] No events returned on first attempt, retrying after re-auth..."
-      );
-      await page.goto(getEdtUrl(username), { waitUntil: "domcontentloaded" });
-      await page.waitForTimeout(1000);
-      if (await isOnCASLogin(page)) {
-        await authenticateCAS(page, username, password);
-        await context.storageState({ path: AUTH_STATE_PATH });
-      }
-      items = await fetchRange(page, startDate, endDate);
-    }
-
+    const items = await fetchRange(page, startDate, endDate);
     console.log(`[scraper] Retrieved ${items.length} raw events`);
     return items;
+  } finally {
+    await context.close();
+  }
+}
+
+export async function scrapeEDT(
+  username: string,
+  password: string
+): Promise<RawEdtItem[]> {
+  ensureDataDir();
+
+  const browser = await chromium.launch({ headless: true });
+
+  try {
+    try {
+      return await attemptScrape(browser, username, password, true);
+    } catch (err) {
+      // The cached session may look valid on the landing page but be rejected
+      // by /Home/Get (which then returns HTML instead of JSON). Nuke the saved
+      // state and retry once with a fresh CAS login.
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn(`[scraper] First attempt failed: ${message}`);
+      console.warn("[scraper] Clearing saved session and retrying with fresh login...");
+      if (existsSync(AUTH_STATE_PATH)) {
+        rmSync(AUTH_STATE_PATH, { force: true });
+      }
+      return await attemptScrape(browser, username, password, false);
+    }
   } finally {
     await browser.close();
   }
