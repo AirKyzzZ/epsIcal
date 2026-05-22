@@ -9,11 +9,19 @@
     "start": "tsx src/index.ts serve",
     "dev": "tsx watch src/index.ts serve"
   },
-  "keywords": ["epsi", "ical", "calendar", "edt", "wigor", "schedule"],
+  "keywords": [
+    "epsi",
+    "ical",
+    "calendar",
+    "edt",
+    "wigor",
+    "schedule"
+  ],
   "author": "Maxime Mansiet",
   "license": "MIT",
   "dependencies": {
     "@hono/node-server": "^1.19.11",
+    "@touch4it/ical-timezones": "^1.9.0",
     "cheerio": "^1.2.0",
     "dotenv": "^17.3.1",
     "hono": "^4.12.9",

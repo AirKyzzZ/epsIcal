@@ -1,4 +1,5 @@
 import ical, { ICalCalendarMethod, ICalEventStatus } from "ical-generator";
+import { getVtimezoneComponent } from "@touch4it/ical-timezones";
 import type { EdtEvent } from "./parser.js";
 
 const TIMEZONE = "Europe/Paris";
@@ -6,7 +7,7 @@ const TIMEZONE = "Europe/Paris";
 export function generateIcal(events: EdtEvent[]): string {
   const calendar = ical({
     name: "EDT EPSI",
-    timezone: TIMEZONE,
+    timezone: { name: TIMEZONE, generator: getVtimezoneComponent },
     method: ICalCalendarMethod.PUBLISH,
     prodId: {
       company: "epsIcal",
