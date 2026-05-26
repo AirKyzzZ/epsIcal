@@ -8,6 +8,14 @@ import { generateIcal } from "./generator.js";
 import { startServer, type RefreshState } from "./server.js";
 import { publishToGhPages } from "./publish.js";
 
+// ical-generator v10 calls Date.getHours()/getDate() when projecting events to
+// a TZID — and those Date methods read the SYSTEM timezone. Run in UTC (e.g.
+// GitHub Actions) and every DTSTART is shifted into UTC wall clock even
+// though the TZID says Europe/Paris, so Apple Calendar renders classes 2h
+// early in summer. Pin the process TZ so the calendar is identical wherever
+// it runs.
+process.env.TZ = "Europe/Paris";
+
 const DATA_DIR = path.join(import.meta.dirname, "..", "data");
 const CALENDAR_PATH = path.join(DATA_DIR, "calendar.ics");
 

@@ -43,4 +43,5 @@ jobs:
         env:
           CAS_USERNAME: ${{ secrets.CAS_USERNAME }}
           CAS_PASSWORD: ${{ secrets.CAS_PASSWORD }}
+          TZ: Europe/Paris
         run: npx tsx src/index.ts scrape
