@@ -1,8 +1,9 @@
 name: scrape
 
+# Scraping moved to the clawdbot VPS (epsical-scrape.timer) on 2026-06-05:
+# Wigor silently drops GitHub-hosted runner IPs, so the daily schedule here is
+# disabled. Kept dispatch-only for archival / in case the block is ever lifted.
 on:
-  schedule:
-    - cron: "0 4 * * *"
   workflow_dispatch: {}
 
 concurrency:
