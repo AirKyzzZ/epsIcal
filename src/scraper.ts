@@ -10,6 +10,10 @@ const EDT_BASE_URL =
 const API_URL = "https://ws-edt-cd.wigorservices.net/Home/Get";
 const CAS_HOST = "cas-p.wigorservices.net";
 
+const NAV_TIMEOUT_MS = 60_000;
+const MAX_ATTEMPTS = 3;
+const RETRY_BACKOFF_MS = [5_000, 15_000];
+
 /**
  * Raw event shape returned by /Home/Get. Only the fields we consume are typed;
  * the API returns ~30 fields but we ignore the rest.
@@ -38,6 +42,10 @@ function ensureDataDir() {
 
 function getEdtUrl(username: string): string {
   return `${EDT_BASE_URL}&Tel=${username}`;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /** Returns September 1st of the current school year at 00:00 UTC. */
@@ -152,7 +160,10 @@ async function attemptScrape(
 
     // Visit the EDT landing page first. This handles CAS redirect if the
     // session has expired and primes the cookies required by /Home/Get.
-    await page.goto(getEdtUrl(username), { waitUntil: "domcontentloaded" });
+    await page.goto(getEdtUrl(username), {
+      waitUntil: "domcontentloaded",
+      timeout: NAV_TIMEOUT_MS,
+    });
     await page.waitForTimeout(1000);
 
     if (await isOnCASLogin(page)) {
@@ -179,20 +190,32 @@ export async function scrapeEDT(
   const browser = await chromium.launch({ headless: true });
 
   try {
-    try {
-      return await attemptScrape(browser, username, password, true);
-    } catch (err) {
-      // The cached session may look valid on the landing page but be rejected
-      // by /Home/Get (which then returns HTML instead of JSON). Nuke the saved
-      // state and retry once with a fresh CAS login.
-      const message = err instanceof Error ? err.message : String(err);
-      console.warn(`[scraper] First attempt failed: ${message}`);
-      console.warn("[scraper] Clearing saved session and retrying with fresh login...");
-      if (existsSync(AUTH_STATE_PATH)) {
-        rmSync(AUTH_STATE_PATH, { force: true });
+    let lastErr: unknown;
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        // Only the first attempt reuses a saved session. After any failure we
+        // drop auth.json (a stale session looks valid on the landing page but is
+        // rejected by /Home/Get) so every retry does a clean CAS login.
+        return await attemptScrape(browser, username, password, attempt === 1);
+      } catch (err) {
+        lastErr = err;
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn(`[scraper] Attempt ${attempt}/${MAX_ATTEMPTS} failed: ${message}`);
+
+        if (existsSync(AUTH_STATE_PATH)) {
+          rmSync(AUTH_STATE_PATH, { force: true });
+        }
+
+        const backoff = RETRY_BACKOFF_MS[attempt - 1];
+        if (backoff && attempt < MAX_ATTEMPTS) {
+          console.warn(`[scraper] Retrying in ${backoff / 1000}s...`);
+          await sleep(backoff);
+        }
       }
-      return await attemptScrape(browser, username, password, false);
     }
+
+    throw lastErr;
   } finally {
     await browser.close();
   }
