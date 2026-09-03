@@ -1,17 +1,16 @@
 # epsIcal
 
-Synchronise ton emploi du temps EPSI (Wigor) avec Apple Calendar, Google Calendar, ou n'importe quelle app compatible iCal.
+Synchronise ton emploi du temps EPSI (Hyperplanning) avec Apple Calendar, Google Calendar, ou n'importe quelle app compatible iCal.
 
-L'outil scrape ton EDT depuis le portail Wigor, le convertit en fichier `.ics`, et le sert via un petit serveur HTTP. Tu t'abonnes a l'URL depuis ton app calendrier et c'est a jour automatiquement.
+Hyperplanning publie deja un `.ics`, mais il est illisible dans un calendrier : chaque evenement s'appelle `26-031-NAT-M0175 - COURAUD - BAC+3 ALL 26/27 EPSI BDX`. epsIcal recupere ce flux, remplace les codes par de vrais noms de cours, nettoie les salles et les descriptions, et republie un `.ics` propre.
 
-## Fonctionnalites
+## Fonctionnement
 
-- Authentification CAS automatique (session sauvegardee)
-- Scraping de 4 semaines (semaine courante + 3 suivantes)
-- Generation d'un fichier `.ics` standard
-- Serveur HTTP leger pour servir le calendrier
-- Endpoint `/refresh` pour forcer une mise a jour
-- Compatible avec toutes les apps calendrier (Apple Calendar, Google Calendar, Outlook, Thunderbird...)
+```
+fetch(HP_ICAL_URL) -> parse ICS -> renomme + nettoie -> genere .ics -> publie sur gh-pages
+```
+
+Pas de scraping, pas de navigateur, pas de login. L'URL iCal d'Hyperplanning contient un token personnel qui sert d'authentification.
 
 ## Prerequis
 
@@ -21,15 +20,20 @@ L'outil scrape ton EDT depuis le portail Wigor, le convertit en fichier `.ics`, 
 ## Installation
 
 ```bash
-git clone https://github.com/maxime-mnsiet/epsIcal.git
+git clone https://github.com/AirKyzzZ/epsIcal.git
 cd epsIcal
 npm install
-npx playwright install chromium
 ```
 
 ## Configuration
 
-Copie le fichier d'exemple et remplis tes identifiants CAS (les memes que MonCampus) :
+Recupere ton URL iCal depuis Hyperplanning :
+
+1. Ouvre ton espace etudiant (le lien direct avec ton `identifiant`)
+2. Clique sur l'icone **`.ical`** en haut a droite
+3. Sous *"Synchroniser l'emploi du temps"*, clique **Copier l'adresse**
+
+Puis :
 
 ```bash
 cp .env.example .env
@@ -38,20 +42,90 @@ cp .env.example .env
 Edite `.env` :
 
 ```env
-CAS_USERNAME=prenom.nom
-CAS_PASSWORD=ton_mot_de_passe
+HP_ICAL_URL=https://cd-XXXX.hyperplanning.fr/hp/Telechargements/ical/Edt_NOM.ics?version=...&icalsecurise=...&param=...
 PORT=3333
 ```
 
+> L'URL contient un token personnel (`icalsecurise`). Ne la commit jamais, ne la partage pas : elle donne acces a ton emploi du temps complet.
+
+## Noms de cours
+
+Hyperplanning ne publie que des codes (`26-031-NAT-M0175`), jamais le nom du cours. `course-names.json` fait la traduction :
+
+```json
+{
+  "26-031-NAT-M0171": "Cybersecurite appliquee au developpement",
+  "26-031-NAT-M0244": "PHP Framework Symfony",
+  "26-031-NAT-M0252": ""
+}
+```
+
+Un code sans nom retombe sur `CODE · INTERVENANT`, donc rien ne casse si le fichier est incomplet. A chaque `npm run scrape` le log indique combien de noms sont remplis :
+
+```
+[epsIcal] course names filled in: 12/42
+```
+
+Quand un nouveau code apparait en cours d'annee, ajoute-le au fichier.
+
+### Reference des codes
+
+Intervenant et nombre de seances pour chaque code de l'annee 2026-2027, du plus frequent au moins frequent.
+
+| Code | Intervenant | Seances |
+|------|-------------|---------|
+| `26-031-NAT-M0171` | ALZATE | 10 |
+| `26-031-NAT-M0244` | BEDARD | 10 |
+| `26-031-NAT-M0252` | ROBERT | 10 |
+| `25-031-NAT-M0384` | VERDOIS | 8 |
+| `26-031-NAT-M0255` | VALAT | 7 |
+| `25-031-NAT-M0385` | PEYNEAU | 6 |
+| `26-031-NAT-M0050` | JAMBOR | 6 |
+| `26-031-NAT-M0175` | COURAUD | 6 |
+| `26-031-NAT-M0242` | TECHER | 6 |
+| `26-031-NAT-M0245` | BEDARD | 6 |
+| `26-031-NAT-M0251` | GABAS | 6 |
+| `26-031-NAT-M0253` | ROBERT | 6 |
+| `25-031-NAT-M0376` | LADRAT | 5 |
+| `25-031-NAT-M0381` | JAMBOR | 5 |
+| `26-031-NAT-M0158` | JAMBOR | 5 |
+| `26-031-NAT-M0161` | JAMBOR | 5 |
+| `26-031-NAT-M0164` | GRAFFIN | 5 |
+| `26-031-NAT-M0246` | TECHER | 5 |
+| `26-031-NAT-M0248` | GABAS | 5 |
+| `26-031-NAT-M0162` | LABASSE | 4 |
+| `26-031-NAT-M0177` | GABAS | 4 |
+| `26-031-NAT-M0178` | LADRAT | 4 |
+| `26-031-NAT-M0183` | LABASSE | 4 |
+| `26-031-NAT-M0239` | COURAUD | 4 |
+| `26-031-NAT-M0243` | LABASSE | 4 |
+| `26-031-NAT-M0157` | MALDONADO | 3 |
+| `26-031-NAT-M0163` | TECHER | 3 |
+| `26-031-NAT-M0176` | ALZATE | 3 |
+| `26-031-NAT-M0240` | CHAILLOU | 3 |
+| `26-031-NAT-M0250` | ROBERT | 3 |
+| `26-031-NAT-M0256` | JAMBOR | 3 |
+| `25-010-NAT-M0012` | CHAILLOU | 2 |
+| `25-032-NAT-M0108` | JAMBOR | 2 |
+| `26-031-NAT-M0159` | BEDARD | 2 |
+| `26-031-NAT-M0179` | MALDONADO | 2 |
+| `26-031-NAT-M0180` | LABASSE | 2 |
+| `26-031-NAT-M0181` | LE BARS | 2 |
+| `26-031-NAT-M0182` | LE BARS | 2 |
+| `26-031-NAT-M0184` | LABASSE | 2 |
+| `26-031-NAT-M0249` | CHAILLOU | 2 |
+| `25-010-NAT-M0069` | CHESNEAU | 1 |
+| `25-010-NAT-M0082` | JAMBOR | 1 |
+
 ## Utilisation
 
-### Scraper une fois
+### Recuperer et generer
 
 ```bash
 npm run scrape
 ```
 
-Genere `data/calendar.ics` avec ton emploi du temps des 4 prochaines semaines.
+Genere `data/calendar.ics` et le publie sur `gh-pages`.
 
 ### Lancer le serveur
 
@@ -59,138 +133,81 @@ Genere `data/calendar.ics` avec ton emploi du temps des 4 prochaines semaines.
 npm run serve
 ```
 
-Le serveur demarre sur `http://localhost:3333`. Endpoints :
-
 | Route | Description |
 |-------|-------------|
-| `/` | Page d'accueil avec instructions |
-| `/calendar.ics` | Le fichier iCal (pour abonnement calendrier) |
+| `/` | Page d'accueil |
+| `/calendar.ics` | Le fichier iCal |
 | `/health` | Health check |
-| `/refresh` | Force un re-scrape |
+| `/refresh` | Force une mise a jour |
 
-### Developpement
+### Tests
 
 ```bash
-npm run dev
+npm test        # parse un fixture reel et verifie les horaires, salles, UID
+npm run typecheck
 ```
-
-Lance le serveur avec hot-reload.
 
 ## S'abonner au calendrier
 
+L'URL publique est `https://airkyzzz.github.io/epsIcal/calendar.ics`.
+
 ### Apple Calendar (Mac)
 
-1. Ouvre Calendar
-2. `Fichier` > `Nouvel abonnement...`
-3. Entre l'URL : `http://localhost:3333/calendar.ics`
-4. Configure le rafraichissement automatique sur "Chaque jour"
+1. `Fichier` > `Nouvel abonnement...`
+2. Colle l'URL
+3. Rafraichissement automatique : "Chaque jour"
 
 ### Apple Calendar (iPhone/iPad)
 
-1. `Reglages` > `Calendrier` > `Comptes` > `Ajouter un compte`
+1. `Reglages` > `Applications` > `Calendrier` > `Comptes` > `Ajouter un compte`
 2. `Autre` > `Ajouter un calendrier avec abonnement`
-3. Entre l'URL du serveur
-4. Valide
+3. Colle l'URL
 
 ### Google Calendar
 
-1. Va sur [calendar.google.com](https://calendar.google.com)
-2. `Autres calendriers` > `A partir de l'URL`
-3. Colle l'URL : `http://<ton-serveur>:3333/calendar.ics`
+`Autres calendriers` > `A partir de l'URL` > colle l'URL.
 
-> Google Calendar rafraichit les abonnements toutes les 12-24h environ.
+> Google rafraichit les abonnements toutes les 12-24h.
 
-## Deploiement (serveur 24/7)
+## Deploiement
 
-Pour que le calendrier soit accessible en permanence (depuis iPhone, etc.), deploie sur un serveur.
-
-### Setup
+Le scrape tourne quotidiennement sur le VPS `clawdbot` via systemd.
 
 ```bash
-# Sur le serveur
-git clone https://github.com/maxime-mnsiet/epsIcal.git
-cd epsIcal
-npm install
-npx playwright install chromium
-# Si deps systeme manquantes pour Chromium :
-npx playwright install-deps chromium
-cp .env.example .env
-# Edite .env avec tes identifiants
+ssh clawdbot 'systemctl list-timers epsical-scrape.timer'   # prochain run
+ssh clawdbot 'journalctl -u epsical-scrape.service -n 50'   # logs
+ssh clawdbot 'cd /root/epsIcal && npm run scrape'           # refresh manuel
 ```
 
-### Systemd (serveur HTTP)
-
-Cree `/etc/systemd/system/epsical.service` :
-
-```ini
-[Unit]
-Description=epsIcal - EDT EPSI Calendar Server
-After=network.target
-
-[Service]
-Type=simple
-User=YOUR_USER
-WorkingDirectory=/path/to/epsIcal
-ExecStart=/usr/bin/npx tsx src/index.ts serve
-Restart=always
-RestartSec=10
-Environment=NODE_ENV=production
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl enable epsical
-sudo systemctl start epsical
-```
-
-### Cron (scrape quotidien)
-
-```bash
-crontab -e
-```
-
-Ajoute :
-
-```
-0 6 * * * cd /path/to/epsIcal && /usr/bin/npx tsx src/index.ts scrape >> /tmp/epsical-cron.log 2>&1
-```
-
-Le scrape tourne tous les jours a 6h du matin.
+Le workflow GitHub Actions (`.github/workflows/scrape.yml`) est en `workflow_dispatch` seul, comme fallback manuel. Il lui faut le secret `HP_ICAL_URL`.
 
 ## Stack
 
-- **TypeScript** — Tout le code
-- **Playwright** — Authentification CAS + scraping
-- **Cheerio** — Parsing HTML
-- **ical-generator** — Generation du fichier .ics
-- **Hono** — Serveur HTTP minimal
+- **TypeScript** — tout le code
+- **ical-generator** — generation du `.ics`
+- **Hono** — serveur HTTP minimal
 
 ## Troubleshooting
 
-### "Missing CAS_USERNAME or CAS_PASSWORD"
+### "Missing HP_ICAL_URL in .env"
 
-Assure-toi d'avoir cree le fichier `.env` avec tes identifiants. Voir [Configuration](#configuration).
+Cree `.env` a partir de `.env.example` et colle ton URL iCal. Voir [Configuration](#configuration).
 
-### Le scrape echoue / "CAS authentication failed"
+### "Hyperplanning returned HTTP 404"
 
-- Verifie tes identifiants CAS (les memes que MonCampus)
-- Supprime `data/auth.json` pour forcer une re-authentification
-- Le CAS peut etre temporairement indisponible
+Le token `icalsecurise` a ete regenere. Retourne sur ton espace, reclique sur `.ical`, recopie l'adresse dans `.env`.
 
-### Le calendrier est vide
+### Les titres affichent des codes au lieu des noms
 
-- Certaines semaines n'ont pas de cours (vacances, stages)
-- Essaie de forcer un refresh : `curl http://localhost:3333/refresh`
+`course-names.json` est incomplet pour ces codes. Voir [Noms de cours](#noms-de-cours).
 
-### Playwright n'arrive pas a s'installer
+### Le calendrier semble incomplet
 
-Sur un serveur Linux, il faut parfois installer les dependances systeme :
+Hyperplanning n'exporte que les semaines **publiees** par l'ecole. Les semaines pas encore publiees n'apparaissent nulle part, ni dans l'export ni dans l'espace.
 
-```bash
-npx playwright install-deps chromium
-```
+### Les horaires sont decales
+
+Hyperplanning emet des instants UTC (`...Z`) et epsIcal les republie tels quels, sans conversion. Si les heures sont fausses, compare `DTSTART` dans `data/calendar.ics` avec l'espace Hyperplanning avant de suspecter le code.
 
 ## Licence
 

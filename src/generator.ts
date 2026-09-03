@@ -1,13 +1,10 @@
 import ical, { ICalCalendarMethod, ICalEventStatus } from "ical-generator";
-import { getVtimezoneComponent } from "@touch4it/ical-timezones";
 import type { EdtEvent } from "./parser.js";
-
-const TIMEZONE = "Europe/Paris";
+import { loadCourseNames, resolveCourseName } from "./course-names.js";
 
 export function generateIcal(events: EdtEvent[]): string {
   const calendar = ical({
     name: "EDT EPSI",
-    timezone: { name: TIMEZONE, generator: getVtimezoneComponent },
     method: ICalCalendarMethod.PUBLISH,
     prodId: {
       company: "epsIcal",
@@ -15,29 +12,23 @@ export function generateIcal(events: EdtEvent[]): string {
     },
   });
 
-  const modalityLabel: Record<EdtEvent["modality"], string | null> = {
-    presential: "Présentiel",
-    remote: "Distanciel",
-    mixed: "Mixte",
-    unknown: null,
-  };
+  const names = loadCourseNames();
 
   for (const event of events) {
-    const mode = modalityLabel[event.modality];
     const description = [
       event.teacher && `Prof: ${event.teacher}`,
       event.group && `Groupe: ${event.group}`,
-      mode && `Mode: ${mode}`,
+      event.room && `Salle: ${event.room}`,
       event.teamsUrl && `Teams: ${event.teamsUrl}`,
     ]
       .filter(Boolean)
       .join("\n");
 
     calendar.createEvent({
+      id: event.uid || undefined,
       start: event.start,
       end: event.end,
-      timezone: TIMEZONE,
-      summary: event.course,
+      summary: resolveCourseName(event.code, event.teacher, names),
       location: event.room || undefined,
       description,
       status: ICalEventStatus.CONFIRMED,

@@ -2,19 +2,12 @@ import "dotenv/config";
 import { writeFile } from "fs/promises";
 import { existsSync, mkdirSync } from "fs";
 import path from "path";
-import { scrapeEDT } from "./scraper.js";
-import { parseEdtEvents, deduplicateEvents } from "./parser.js";
+import { fetchHyperplanningIcs } from "./fetcher.js";
+import { parseHyperplanningIcs, deduplicateEvents, type EdtEvent } from "./parser.js";
 import { generateIcal } from "./generator.js";
+import { loadCourseNames } from "./course-names.js";
 import { startServer, type RefreshState } from "./server.js";
 import { publishToGhPages } from "./publish.js";
-
-// ical-generator v10 calls Date.getHours()/getDate() when projecting events to
-// a TZID — and those Date methods read the SYSTEM timezone. Run in UTC (e.g.
-// GitHub Actions) and every DTSTART is shifted into UTC wall clock even
-// though the TZID says Europe/Paris, so Apple Calendar renders classes 2h
-// early in summer. Pin the process TZ so the calendar is identical wherever
-// it runs.
-process.env.TZ = "Europe/Paris";
 
 const DATA_DIR = path.join(import.meta.dirname, "..", "data");
 const CALENDAR_PATH = path.join(DATA_DIR, "calendar.ics");
@@ -32,41 +25,70 @@ function logErr(msg: string): void {
 }
 
 function getConfig() {
-  const username = process.env.CAS_USERNAME;
-  const password = process.env.CAS_PASSWORD;
+  const icalUrl = process.env.HP_ICAL_URL;
   const port = parseInt(process.env.PORT || "3333", 10);
   const intervalHours = parseFloat(process.env.REFRESH_INTERVAL_HOURS || "6");
 
-  if (!username || !password) {
+  if (!icalUrl) {
     console.error(
-      "Missing CAS_USERNAME or CAS_PASSWORD in .env\nCopy .env.example to .env and fill in your credentials."
+      "Missing HP_ICAL_URL in .env\n" +
+        "Open your Hyperplanning espace, click the .ical button, and copy the " +
+        "subscription address into .env as HP_ICAL_URL."
     );
     process.exit(1);
   }
 
-  return { username, password, port, intervalHours };
+  return { icalUrl, port, intervalHours };
+}
+
+function parisTime(date: Date): string {
+  return new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function logSummary(events: EdtEvent[]): void {
+  const names = loadCourseNames();
+  const codes = new Set(events.map((e) => e.code));
+  const named = [...codes].filter((c) => names[c]).length;
+
+  log(`[epsIcal] ${events.length} events, ${codes.size} distinct courses`);
+  log(`[epsIcal] course names filled in: ${named}/${codes.size}`);
+  log(
+    `[epsIcal] range: ${parisTime(events[0].start)} → ${parisTime(events[events.length - 1].start)}`
+  );
+
+  for (const event of events.slice(0, 3)) {
+    log(`[epsIcal]   ${parisTime(event.start)}  ${event.code}  ${event.room}`);
+  }
 }
 
 async function runScrape(): Promise<number> {
-  const { username, password } = getConfig();
+  const { icalUrl } = getConfig();
 
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
-  log("[epsIcal] Starting scrape...");
-  const rawItems = await scrapeEDT(username, password);
+  log("[epsIcal] Fetching Hyperplanning calendar...");
+  const raw = await fetchHyperplanningIcs(icalUrl);
 
-  let allEvents = parseEdtEvents(rawItems);
-  allEvents = deduplicateEvents(allEvents);
+  const { events, skippedAllDay } = parseHyperplanningIcs(raw);
+  const allEvents = deduplicateEvents(events);
   allEvents.sort((a, b) => a.start.getTime() - b.start.getTime());
 
-  log(`[epsIcal] ${allEvents.length} unique events found`);
+  if (skippedAllDay > 0) {
+    log(`[epsIcal] Skipped ${skippedAllDay} all-day entries (Férié)`);
+  }
 
   if (allEvents.length === 0) {
     throw new Error(
-      "[epsIcal] Scrape produced 0 events — refusing to overwrite calendar. " +
-        "Likely causes: expired CAS session, Wigor API change, or a parser regression."
+      "[epsIcal] Parsed 0 events — refusing to overwrite calendar. " +
+        "Likely causes: a rotated HP_ICAL_URL token, or a Hyperplanning format change."
     );
   }
+
+  logSummary(allEvents);
 
   const ics = generateIcal(allEvents);
   await writeFile(CALENDAR_PATH, ics);
@@ -149,8 +171,6 @@ switch (command) {
 
     startServer(port, refresh, state);
 
-    // Kick off an initial refresh a few seconds after boot so the first scrape
-    // doesn't race server startup.
     const runScheduled = () => {
       refresh().catch(() => {
         // Errors are already logged + surfaced via state; swallow here so the
@@ -170,11 +190,11 @@ switch (command) {
 epsIcal - Sync your EPSI schedule to any calendar app
 
 Usage:
-  npx tsx src/index.ts scrape    Scrape EDT and generate calendar.ics
+  npx tsx src/index.ts scrape    Fetch Hyperplanning and generate calendar.ics
   npx tsx src/index.ts serve     Start HTTP server (serves calendar.ics)
 
 Or use npm scripts:
-  npm run scrape                 Run scraper once
+  npm run scrape                 Fetch once
   npm run serve                  Start server
   npm run dev                    Start server with hot-reload
 `);
