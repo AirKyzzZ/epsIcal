@@ -1,6 +1,12 @@
 import ical, { ICalCalendarMethod, ICalEventStatus } from "ical-generator";
 import type { EdtEvent } from "./parser.js";
-import { loadCourseNames, resolveCourseName } from "./course-names.js";
+import {
+  classifyCourse,
+  courseKindText,
+  courseLabel,
+  loadCourseLabels,
+  shortenCourse,
+} from "./course-label.js";
 
 export function generateIcal(events: EdtEvent[]): string {
   const calendar = ical({
@@ -12,14 +18,18 @@ export function generateIcal(events: EdtEvent[]): string {
     },
   });
 
-  const names = loadCourseNames();
+  const labels = loadCourseLabels();
 
   for (const event of events) {
+    const fullName = event.course;
+    const shortName = shortenCourse(event.course, labels);
+
     const description = [
+      shortName === fullName ? null : fullName,
+      `Type: ${courseKindText(classifyCourse(event.course))}`,
       event.teacher && `Prof: ${event.teacher}`,
       event.group && `Groupe: ${event.group}`,
       event.room && `Salle: ${event.room}`,
-      event.teamsUrl && `Teams: ${event.teamsUrl}`,
     ]
       .filter(Boolean)
       .join("\n");
@@ -28,9 +38,10 @@ export function generateIcal(events: EdtEvent[]): string {
       id: event.uid || undefined,
       start: event.start,
       end: event.end,
-      summary: resolveCourseName(event.code, event.teacher, names),
+      summary: courseLabel(event.course, event.roomIsPlaceholder ? "" : event.room, labels),
       location: event.room || undefined,
       description,
+      url: event.teamsUrl ?? undefined,
       status: ICalEventStatus.CONFIRMED,
     });
   }

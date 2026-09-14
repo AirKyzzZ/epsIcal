@@ -4,90 +4,187 @@ PRODID;LANGUAGE=fr:Copyright Index-Education - HYPERPLANNING 2026
 METHOD:PUBLISH
 X-CALSTART:20260831T000000Z
 X-CALEND:20270828T000000Z
-X-WR-CALNAME;LANGUAGE=fr:HYP - ETUDIANT Test (263103019/10 - BAC+3 ALL 26/2
- 7 EPSI BDX)
+X-WR-CALNAME;LANGUAGE=fr:HYP - MANSIET Maxime 08/06/2006 (263103019/10 - BA
+ C+3 ALL 26/27 EPSI BDX, 263103006/10 - BAC+3 CDA DevFS 1S2S 26/27 EPSI BDX
+ ) - du 31 août 2026 au 28 août 2027
+X-WR-CALDESC;LANGUAGE=fr:Emploi du temps de MANSIET Maxime 08/06/2006 génér
+ é par le logiciel HP (©INDEX ÉDUCATION) le 14 sept. 2026 - C&D - Compétenc
+ es et Développement - valable sur la période du 31 août 2026 au 28 août 20
+ 27 - Semaines : semaine 36 - 34
 BEGIN:VEVENT
 CATEGORIES:HYPERPLANNING
-DTSTAMP:20260903T072847Z
+DTSTAMP:20260914T150806Z
 LAST-MODIFIED:20260826T124255Z
 UID:Cours-531292-1-ETUDIANT_Test-Index-Education
 DTSTART:20260902T073000Z
 DTEND:20260902T110000Z
-SUMMARY;LANGUAGE=fr:25-010-NAT-M0069 - CHESNEAU - BAC+3 ALL 26/27 EPSI BDX
+SUMMARY;LANGUAGE=fr:Rentrée - CHESNEAU - BAC+3 ALL 26/27 EPSI BDX
 LOCATION;LANGUAGE=fr:F100 (50)
-DESCRIPTION;LANGUAGE=fr:Matière : 25-010-NAT-M0069\nIntervenant : CHESNEAU\
- nGroupe : BAC+3 ALL 26/27 EPSI BDX\nSalle : F100 (50)\n\nContenu pédagogiq
- ue de cette séance : \n<span  style="color: Silver\;"><span style="font-we
- ight:normal\; font-style:italic\;">Sans titre</span></span>\n\n<span style
- ="font-weight:bold\; text-decoration:underline\;">Progression 25-010-NAT-M
- 0069 (36)</span><br /><a href="https://teams.microsoft.com/l/meetup-join/1
- 9%3ameeting_ZjVmYjUzZWQtNTQxOC00NGRmLTk2OWYtYTU2ZWUyMDRkYmQ2%40thread.v2/0
- ?context=%7b%22Tid%22%3a%22b6e77e52-65f6-4dec-b7d9-8e45f36a536f%22%2c%22Oi
- d%22%3a%22de4ff552-0571-493c-a351-95e011e7f0b3%22%7d">lien visio</a><br />
- https://teams.microsoft.com/l/meetup-join/19%3ameeting_ZjVmYjUzZWQtNTQxOC0
- 0NGRmLTk2OWYtYTU2ZWUyMDRkYmQ2%40thread.v2/0?context=%7b%22Tid%22%3a%22b6e7
- 7e52-65f6-4dec-b7d9-8e45f36a536f%22%2c%22Oid%22%3a%22de4ff552-0571-493c-a3
- 51-95e011e7f0b3%22%7d
-X-ALT-DESC;FMTTYPE=text/html:Matière : 25-010-NAT-M0069<br/>Intervenant : C
- HESNEAU<br/>Groupe : BAC+3 ALL 26/27 EPSI BDX<br/>Salle : F100 (50)<br/><b
- r/>Contenu pédagogique de cette séance : <br/><span  style="color: Silver\
- ;"><span style="font-weight:normal\; font-style:italic\;">Sans titre</span
- ></span><br/><br/><span style="font-weight:bold\; text-decoration:underlin
- e\;">Progression 25-010-NAT-M0069 (36)</span><br /><a href="https://teams.
- microsoft.com/l/meetup-join/19%3ameeting_ZjVmYjUzZWQtNTQxOC00NGRmLTk2OWYtY
- TU2ZWUyMDRkYmQ2%40thread.v2/0?context=%7b%22Tid%22%3a%22b6e77e52-65f6-4dec
- -b7d9-8e45f36a536f%22%2c%22Oid%22%3a%22de4ff552-0571-493c-a351-95e011e7f0b
- 3%22%7d">lien visio</a><br />https://teams.microsoft.com/l/meetup-join/19%
- 3ameeting_ZjVmYjUzZWQtNTQxOC00NGRmLTk2OWYtYTU2ZWUyMDRkYmQ2%40thread.v2/0?c
- ontext=%7b%22Tid%22%3a%22b6e77e52-65f6-4dec-b7d9-8e45f36a536f%22%2c%22Oid%
- 22%3a%22de4ff552-0571-493c-a351-95e011e7f0b3%22%7d
+DESCRIPTION;LANGUAGE=fr:Matière : Rentrée\nIntervenant : CHESNEAU\nGroupe :
+  BAC+3 ALL 26/27 EPSI BDX\nSalle : F100 (50)\n\nContenu pédagogique de cet
+ te séance : \n<span  style="color: Silver\;"><span style="font-weight:norm
+ al\; font-style:italic\;">Sans titre</span></span>\n\n<span style="font-we
+ ight:bold\; text-decoration:underline\;">Progression 25-010-NAT-M0069 (36)
+ </span><br /><a href="https://teams.microsoft.com/l/meetup-join/19%3ameeti
+ ng_ZjVmYjUzZWQtNTQxOC00NGRmLTk2OWYtYTU2ZWUyMDRkYmQ2%40thread.v2/0?context=
+ %7b%22Tid%22%3a%22b6e77e52-65f6-4dec-b7d9-8e45f36a536f%22%2c%22Oid%22%3a%2
+ 2de4ff552-0571-493c-a351-95e011e7f0b3%22%7d">lien visio</a><br />https://t
+ eams.microsoft.com/l/meetup-join/19%3ameeting_ZjVmYjUzZWQtNTQxOC00NGRmLTk2
+ OWYtYTU2ZWUyMDRkYmQ2%40thread.v2/0?context=%7b%22Tid%22%3a%22b6e77e52-65f6
+ -4dec-b7d9-8e45f36a536f%22%2c%22Oid%22%3a%22de4ff552-0571-493c-a351-95e011
+ e7f0b3%22%7d
+X-ALT-DESC;FMTTYPE=text/html:Matière : Rentrée<br/>Intervenant : CHESNEAU<b
+ r/>Groupe : BAC+3 ALL 26/27 EPSI BDX<br/>Salle : F100 (50)<br/><br/>Conten
+ u pédagogique de cette séance : <br/><span  style="color: Silver\;"><span 
+ style="font-weight:normal\; font-style:italic\;">Sans titre</span></span><
+ br/><br/><span style="font-weight:bold\; text-decoration:underline\;">Prog
+ ression 25-010-NAT-M0069 (36)</span><br /><a href="https://teams.microsoft
+ .com/l/meetup-join/19%3ameeting_ZjVmYjUzZWQtNTQxOC00NGRmLTk2OWYtYTU2ZWUyMD
+ RkYmQ2%40thread.v2/0?context=%7b%22Tid%22%3a%22b6e77e52-65f6-4dec-b7d9-8e4
+ 5f36a536f%22%2c%22Oid%22%3a%22de4ff552-0571-493c-a351-95e011e7f0b3%22%7d">
+ lien visio</a><br />https://teams.microsoft.com/l/meetup-join/19%3ameeting
+ _ZjVmYjUzZWQtNTQxOC00NGRmLTk2OWYtYTU2ZWUyMDRkYmQ2%40thread.v2/0?context=%7
+ b%22Tid%22%3a%22b6e77e52-65f6-4dec-b7d9-8e45f36a536f%22%2c%22Oid%22%3a%22d
+ e4ff552-0571-493c-a351-95e011e7f0b3%22%7d
 END:VEVENT
 BEGIN:VEVENT
 CATEGORIES:HYPERPLANNING
-DTSTAMP:20260903T072847Z
-LAST-MODIFIED:20260826T124304Z
+DTSTAMP:20260914T150806Z
+LAST-MODIFIED:20260904T122530Z
+UID:Cours-446770-41-ETUDIANT_Test-Index-Education
+DTSTART:20270608T140000Z
+DTEND:20270608T160000Z
+SUMMARY;LANGUAGE=fr:Méthodologie Agile & DevOps - ALZATE - BAC+3 ALL 26/27 
+ EPSI BDX
+LOCATION;LANGUAGE=fr:F207 (50)
+DESCRIPTION;LANGUAGE=fr:Matière : Méthodologie Agile & DevOps\nIntervenant 
+ : ALZATE\nGroupe : BAC+3 ALL 26/27 EPSI BDX\nSalle : F207 (50)\n
+X-ALT-DESC;FMTTYPE=text/html:Matière : Méthodologie Agile & DevOps<br/>Inte
+ rvenant : ALZATE<br/>Groupe : BAC+3 ALL 26/27 EPSI BDX<br/>Salle : F207 (5
+ 0)<br/>
+END:VEVENT
+BEGIN:VEVENT
+CATEGORIES:HYPERPLANNING
+DTSTAMP:20260914T150806Z
+LAST-MODIFIED:20260904T122610Z
+UID:Cours-446772-41-ETUDIANT_Test-Index-Education
+DTSTART:20270610T130000Z
+DTEND:20270610T160000Z
+SUMMARY;LANGUAGE=fr:Atelier Scrum - ALZATE - BAC+3 ALL 26/27 EPSI BDX
+LOCATION;LANGUAGE=fr:F207 (50)
+DESCRIPTION;LANGUAGE=fr:Matière : Atelier Scrum\nIntervenant : ALZATE\nGrou
+ pe : BAC+3 ALL 26/27 EPSI BDX\nSalle : F207 (50)\n
+X-ALT-DESC;FMTTYPE=text/html:Matière : Atelier Scrum<br/>Intervenant : ALZA
+ TE<br/>Groupe : BAC+3 ALL 26/27 EPSI BDX<br/>Salle : F207 (50)<br/>
+END:VEVENT
+BEGIN:VEVENT
+CATEGORIES:HYPERPLANNING
+DTSTAMP:20260914T150806Z
+LAST-MODIFIED:20260828T124642Z
+UID:Cours-457918-14-ETUDIANT_Test-Index-Education
+DTSTART:20261204T160000Z
+DTEND:20261204T190000Z
+SUMMARY;LANGUAGE=fr:Classe inversée - Atelier Virtualisation et conteneurs 
+ : Docker - GRAFFIN - BAC+3 CDA DevFS 1S2S 26/27 EPSI BDX
+LOCATION;LANGUAGE=fr:SALLE_20 (0)
+DESCRIPTION;LANGUAGE=fr:Matière : Classe inversée - Atelier Virtualisation 
+ et conteneurs : Docker\nIntervenant : GRAFFIN\nGroupe : BAC+3 CDA DevFS 1S
+ 2S 26/27 EPSI BDX\nSalle : SALLE_20 (0)\n
+X-ALT-DESC;FMTTYPE=text/html:Matière : Classe inversée - Atelier Virtualisa
+ tion et conteneurs : Docker<br/>Intervenant : GRAFFIN<br/>Groupe : BAC+3 C
+ DA DevFS 1S2S 26/27 EPSI BDX<br/>Salle : SALLE_20 (0)<br/>
+END:VEVENT
+BEGIN:VEVENT
+CATEGORIES:HYPERPLANNING
+DTSTAMP:20260914T150806Z
+LAST-MODIFIED:20260826T131402Z
+UID:Cours-458419-29-ETUDIANT_Test-Index-Education
+DTSTART:20270316T170000Z
+DTEND:20270316T190000Z
+SUMMARY;LANGUAGE=fr:Autonomie - MSPR: Dvp et deploiement d'une application 
+ dans le respect du cahier des charges Client // Développement applicatif u
+ tilisant une API IA - BAC+3 CDA DevFS 1S2S 26/27 EPSI BDX
+LOCATION;LANGUAGE=fr:SALLE_20 (0)
+DESCRIPTION;LANGUAGE=fr:Matière : Autonomie - MSPR: Dvp et deploiement d'un
+ e application dans le respect du cahier des charges Client // Développemen
+ t applicatif utilisant une API IA\nGroupe : BAC+3 CDA DevFS 1S2S 26/27 EPS
+ I BDX\nSalle : SALLE_20 (0)\n
+X-ALT-DESC;FMTTYPE=text/html:Matière : Autonomie - MSPR: Dvp et deploiement
+  d'une application dans le respect du cahier des charges Client // Dévelop
+ pement applicatif utilisant une API IA<br/>Groupe : BAC+3 CDA DevFS 1S2S 2
+ 6/27 EPSI BDX<br/>Salle : SALLE_20 (0)<br/>
+END:VEVENT
+BEGIN:VEVENT
+CATEGORIES:HYPERPLANNING
+DTSTAMP:20260914T150806Z
+LAST-MODIFIED:20260826T131402Z
+UID:Cours-458426-41-ETUDIANT_Test-Index-Education
+DTSTART:20270608T070000Z
+DTEND:20270608T090000Z
+SUMMARY;LANGUAGE=fr:MSPR : Mise en production d’une solution à partir des é
+ léments de contextes fournis - VALAT - BAC+3 CDA DevFS 1S2S 26/27 EPSI BDX
+LOCATION;LANGUAGE=fr:SALLE_28 (0)
+DESCRIPTION;LANGUAGE=fr:Matière : MSPR : Mise en production d’une solution 
+ à partir des éléments de contextes fournis\nIntervenant : VALAT\nGroupe : 
+ BAC+3 CDA DevFS 1S2S 26/27 EPSI BDX\nSalle : SALLE_28 (0)\n
+X-ALT-DESC;FMTTYPE=text/html:Matière : MSPR : Mise en production d’une solu
+ tion à partir des éléments de contextes fournis<br/>Intervenant : VALAT<br
+ />Groupe : BAC+3 CDA DevFS 1S2S 26/27 EPSI BDX<br/>Salle : SALLE_28 (0)<br
+ />
+END:VEVENT
+BEGIN:VEVENT
+CATEGORIES:HYPERPLANNING
+DTSTAMP:20260914T150806Z
+LAST-MODIFIED:20260911T114421Z
 UID:Cours-446779-4-ETUDIANT_Test-Index-Education
 DTSTART:20260921T120000Z
 DTEND:20260921T150000Z
-SUMMARY;LANGUAGE=fr:26-031-NAT-M0175 - COURAUD - BAC+3 ALL 26/27 EPSI BDX
-LOCATION;LANGUAGE=fr:F408 (150)\, F410 MYDIL (18)
-DESCRIPTION;LANGUAGE=fr:Matière : 26-031-NAT-M0175\nIntervenant : COURAUD\n
- Groupe : BAC+3 ALL 26/27 EPSI BDX\nSalles : F408 (150)\, F410 MYDIL (18)\n
-X-ALT-DESC;FMTTYPE=text/html:Matière : 26-031-NAT-M0175<br/>Intervenant : C
- OURAUD<br/>Groupe : BAC+3 ALL 26/27 EPSI BDX<br/>Salles : F408 (150)\, F41
- 0 MYDIL (18)<br/>
+SUMMARY;LANGUAGE=fr:Workshop - Créativité & Innovation - COURAUD - BAC+3 AL
+ L 26/27 EPSI BDX
+LOCATION;LANGUAGE=fr:F409 BAS (14)\, F410 MYDIL (18)
+DESCRIPTION;LANGUAGE=fr:Matière : Workshop - Créativité & Innovation\nInter
+ venant : COURAUD\nGroupe : BAC+3 ALL 26/27 EPSI BDX\nSalles : F409 BAS (14
+ )\, F410 MYDIL (18)\n
+X-ALT-DESC;FMTTYPE=text/html:Matière : Workshop - Créativité & Innovation<b
+ r/>Intervenant : COURAUD<br/>Groupe : BAC+3 ALL 26/27 EPSI BDX<br/>Salles 
+ : F409 BAS (14)\, F410 MYDIL (18)<br/>
 END:VEVENT
 BEGIN:VEVENT
 CATEGORIES:HYPERPLANNING
-DTSTAMP:20260903T072847Z
-LAST-MODIFIED:20260826T124511Z
-UID:Cours-446887-20-ETUDIANT_Test-Index-Education
-DTSTART:20270113T150000Z
-DTEND:20270113T170000Z
-SUMMARY;LANGUAGE=fr:26-031-NAT-M0171 - ALZATE - BAC+3 ALL 26/27 EPSI BDX
-LOCATION;LANGUAGE=fr:F408 (150)
-DESCRIPTION;LANGUAGE=fr:Matière : 26-031-NAT-M0171\nIntervenant : ALZATE\nG
- roupe : BAC+3 ALL 26/27 EPSI BDX\nSalle : F408 (150)\n
-X-ALT-DESC;FMTTYPE=text/html:Matière : 26-031-NAT-M0171<br/>Intervenant : A
- LZATE<br/>Groupe : BAC+3 ALL 26/27 EPSI BDX<br/>Salle : F408 (150)<br/>
+DTSTAMP:20260914T150806Z
+LAST-MODIFIED:20260826T124340Z
+UID:Cours-496553-8-ETUDIANT_Test-Index-Education
+DTSTART:20261020T150000Z
+DTEND:20261020T160000Z
+SUMMARY;LANGUAGE=fr:Temps de vie de classe - BAC+3 ALL 26/27 EPSI BDX
+LOCATION;LANGUAGE=fr:F207 (50)
+DESCRIPTION;LANGUAGE=fr:Matière : Temps de vie de classe\nGroupe : BAC+3 AL
+ L 26/27 EPSI BDX\nSalle : F207 (50)\n
+X-ALT-DESC;FMTTYPE=text/html:Matière : Temps de vie de classe<br/>Groupe : 
+ BAC+3 ALL 26/27 EPSI BDX<br/>Salle : F207 (50)<br/>
 END:VEVENT
 BEGIN:VEVENT
 CATEGORIES:HYPERPLANNING
-DTSTAMP:20260903T072847Z
-LAST-MODIFIED:20260827T100310Z
-UID:Cours-458405-23-ETUDIANT_Test-Index-Education
-DTSTART:20270205T080000Z
-DTEND:20270205T120000Z
-SUMMARY;LANGUAGE=fr:26-031-NAT-M0239 - BAC+3 CDA DevFS 1S2S 26/27 EPSI BDX
-LOCATION;LANGUAGE=fr:F003 (38)
-DESCRIPTION;LANGUAGE=fr:Matière : 26-031-NAT-M0239\nGroupe : BAC+3 CDA DevF
- S 1S2S 26/27 EPSI BDX\nSalle : F003 (38)\n
-X-ALT-DESC;FMTTYPE=text/html:Matière : 26-031-NAT-M0239<br/>Groupe : BAC+3 
- CDA DevFS 1S2S 26/27 EPSI BDX<br/>Salle : F003 (38)<br/>
+DTSTAMP:20260914T150806Z
+LAST-MODIFIED:20260904T121620Z
+UID:Cours-446767-8-ETUDIANT_Test-Index-Education
+DTSTART:20261020T073000Z
+DTEND:20261020T090000Z
+SUMMARY;LANGUAGE=fr:Dossier de Synthèse Veille Technologique liée au parcou
+ rs métier choisi - (écrit et oral en anglais) (5) - ALZATE - BAC+3 ALL 26/
+ 27 EPSI BDX
+LOCATION;LANGUAGE=fr:F207 (50)
+DESCRIPTION;LANGUAGE=fr:Matière : Dossier de Synthèse Veille Technologique 
+ liée au parcours métier choisi - (écrit et oral en anglais) (5)\nIntervena
+ nt : ALZATE\nGroupe : BAC+3 ALL 26/27 EPSI BDX\nSalle : F207 (50)\n
+X-ALT-DESC;FMTTYPE=text/html:Matière : Dossier de Synthèse Veille Technolog
+ ique liée au parcours métier choisi - (écrit et oral en anglais) (5)<br/>I
+ ntervenant : ALZATE<br/>Groupe : BAC+3 ALL 26/27 EPSI BDX<br/>Salle : F207
+  (50)<br/>
 END:VEVENT
 BEGIN:VEVENT
 CATEGORIES:HYPERPLANNING
-DTSTAMP:20260903T072847Z
+DTSTAMP:20260914T150806Z
 UID:Ferie-95-ETUDIANT_Test-Index-Education
 DTSTART;VALUE=DATE:20261101
 DTEND;VALUE=DATE:20261102

@@ -5,7 +5,7 @@ import path from "path";
 import { fetchHyperplanningIcs } from "./fetcher.js";
 import { parseHyperplanningIcs, deduplicateEvents, type EdtEvent } from "./parser.js";
 import { generateIcal } from "./generator.js";
-import { loadCourseNames } from "./course-names.js";
+import { loadCourseLabels, shortenCourse } from "./course-label.js";
 import { startServer, type RefreshState } from "./server.js";
 import { publishToGhPages } from "./publish.js";
 
@@ -50,18 +50,24 @@ function parisTime(date: Date): string {
 }
 
 function logSummary(events: EdtEvent[]): void {
-  const names = loadCourseNames();
-  const codes = new Set(events.map((e) => e.code));
-  const named = [...codes].filter((c) => names[c]).length;
+  const labels = loadCourseLabels();
+  const courses = new Set(events.map((e) => e.course));
+  const clumsy = [...courses].filter((c) => shortenCourse(c, labels).endsWith("…"));
 
-  log(`[epsIcal] ${events.length} events, ${codes.size} distinct courses`);
-  log(`[epsIcal] course names filled in: ${named}/${codes.size}`);
+  log(`[epsIcal] ${events.length} events, ${courses.size} distinct courses`);
   log(
     `[epsIcal] range: ${parisTime(events[0].start)} → ${parisTime(events[events.length - 1].start)}`
   );
 
+  if (clumsy.length > 0) {
+    log(
+      `[epsIcal] ${clumsy.length} course name(s) truncated — add a short label in course-names.json:`
+    );
+    for (const course of clumsy) log(`[epsIcal]   ${JSON.stringify(course)}`);
+  }
+
   for (const event of events.slice(0, 3)) {
-    log(`[epsIcal]   ${parisTime(event.start)}  ${event.code}  ${event.room}`);
+    log(`[epsIcal]   ${parisTime(event.start)}  ${shortenCourse(event.course, labels)}  ${event.room}`);
   }
 }
 

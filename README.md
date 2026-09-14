@@ -2,12 +2,12 @@
 
 Synchronise ton emploi du temps EPSI (Hyperplanning) avec Apple Calendar, Google Calendar, ou n'importe quelle app compatible iCal.
 
-Hyperplanning publie deja un `.ics`, mais il est illisible dans un calendrier : chaque evenement s'appelle `26-031-NAT-M0175 - COURAUD - BAC+3 ALL 26/27 EPSI BDX`. epsIcal recupere ce flux, remplace les codes par de vrais noms de cours, nettoie les salles et les descriptions, et republie un `.ics` propre.
+Hyperplanning publie deja un `.ics`, mais il est illisible dans un calendrier : chaque evenement s'appelle `Autonomie - MSPR: Dvp et deploiement d'une application dans le respect du cahier des charges Client // Developpement applicatif utilisant une API IA - CHAILLOU - BAC+3 CDA DevFS 1S2S 26/27 EPSI BDX`. epsIcal recupere ce flux, raccourcit les titres, nettoie les salles et les descriptions, et republie un `.ics` propre.
 
 ## Fonctionnement
 
 ```
-fetch(HP_ICAL_URL) -> parse ICS -> renomme + nettoie -> genere .ics -> publie sur gh-pages
+fetch(HP_ICAL_URL) -> parse ICS -> raccourcit + nettoie -> genere .ics -> publie sur gh-pages
 ```
 
 Pas de scraping, pas de navigateur, pas de login. L'URL iCal d'Hyperplanning contient un token personnel qui sert d'authentification.
@@ -48,74 +48,47 @@ PORT=3333
 
 > L'URL contient un token personnel (`icalsecurise`). Ne la commit jamais, ne la partage pas : elle donne acces a ton emploi du temps complet.
 
-## Noms de cours
+## Titres des evenements
 
-Hyperplanning ne publie que des codes (`26-031-NAT-M0175`), jamais le nom du cours. `course-names.json` fait la traduction :
+epsIcal compose un titre court, lisible meme tronque dans une vue semaine :
+
+```
+📘 Methodologie Agile & DevOps · F207
+🛠 Scrum · F207
+🛠 Docker (classe inversee) · F110
+🎯 MSPR Mise en production
+🏠 MSPR Dvp & deploiement + API IA
+```
+
+L'emoji encode le type de seance :
+
+| Emoji | Type |
+|-------|------|
+| 📘 | Cours |
+| 🛠 | Atelier, workshop, classe inversee |
+| 🎯 | MSPR, dossier, evaluation |
+| 🏠 | Autonomie |
+| 👥 | Vie de classe, conseil pedagogique |
+
+Le nom est raccourci en retirant le prefixe de type (`Atelier `, `Classe inversee - `, `Autonomie - `, `Workshop - `). Au dela de 48 caracteres il est coupe sur une frontiere de mot, et le run le signale :
+
+```
+[epsIcal] 2 course name(s) truncated — add a short label in course-names.json:
+[epsIcal]   "Architecture applicative : structuration des services et de la persistance"
+```
+
+`course-names.json` est la table de libelles courts, clef = nom Hyperplanning exact :
 
 ```json
 {
-  "26-031-NAT-M0171": "Cybersecurite appliquee au developpement",
-  "26-031-NAT-M0244": "PHP Framework Symfony",
-  "26-031-NAT-M0252": ""
+  "Architecture applicative : structuration des services et de la persistance": "Architecture applicative",
+  "Classe inversee - Le langage SQL & SGBD": "SQL & SGBD (classe inversee)"
 }
 ```
 
-Un code sans nom retombe sur `CODE · INTERVENANT`, donc rien ne casse si le fichier est incomplet. A chaque `npm run scrape` le log indique combien de noms sont remplis :
+Les apostrophes courbes et les espaces doubles sont normalises avant la recherche, pas besoin de recopier les bizarreries du flux.
 
-```
-[epsIcal] course names filled in: 12/42
-```
-
-Quand un nouveau code apparait en cours d'annee, ajoute-le au fichier.
-
-### Reference des codes
-
-Intervenant et nombre de seances pour chaque code de l'annee 2026-2027, du plus frequent au moins frequent.
-
-| Code | Intervenant | Seances |
-|------|-------------|---------|
-| `26-031-NAT-M0171` | ALZATE | 10 |
-| `26-031-NAT-M0244` | BEDARD | 10 |
-| `26-031-NAT-M0252` | ROBERT | 10 |
-| `25-031-NAT-M0384` | VERDOIS | 8 |
-| `26-031-NAT-M0255` | VALAT | 7 |
-| `25-031-NAT-M0385` | PEYNEAU | 6 |
-| `26-031-NAT-M0050` | JAMBOR | 6 |
-| `26-031-NAT-M0175` | COURAUD | 6 |
-| `26-031-NAT-M0242` | TECHER | 6 |
-| `26-031-NAT-M0245` | BEDARD | 6 |
-| `26-031-NAT-M0251` | GABAS | 6 |
-| `26-031-NAT-M0253` | ROBERT | 6 |
-| `25-031-NAT-M0376` | LADRAT | 5 |
-| `25-031-NAT-M0381` | JAMBOR | 5 |
-| `26-031-NAT-M0158` | JAMBOR | 5 |
-| `26-031-NAT-M0161` | JAMBOR | 5 |
-| `26-031-NAT-M0164` | GRAFFIN | 5 |
-| `26-031-NAT-M0246` | TECHER | 5 |
-| `26-031-NAT-M0248` | GABAS | 5 |
-| `26-031-NAT-M0162` | LABASSE | 4 |
-| `26-031-NAT-M0177` | GABAS | 4 |
-| `26-031-NAT-M0178` | LADRAT | 4 |
-| `26-031-NAT-M0183` | LABASSE | 4 |
-| `26-031-NAT-M0239` | COURAUD | 4 |
-| `26-031-NAT-M0243` | LABASSE | 4 |
-| `26-031-NAT-M0157` | MALDONADO | 3 |
-| `26-031-NAT-M0163` | TECHER | 3 |
-| `26-031-NAT-M0176` | ALZATE | 3 |
-| `26-031-NAT-M0240` | CHAILLOU | 3 |
-| `26-031-NAT-M0250` | ROBERT | 3 |
-| `26-031-NAT-M0256` | JAMBOR | 3 |
-| `25-010-NAT-M0012` | CHAILLOU | 2 |
-| `25-032-NAT-M0108` | JAMBOR | 2 |
-| `26-031-NAT-M0159` | BEDARD | 2 |
-| `26-031-NAT-M0179` | MALDONADO | 2 |
-| `26-031-NAT-M0180` | LABASSE | 2 |
-| `26-031-NAT-M0181` | LE BARS | 2 |
-| `26-031-NAT-M0182` | LE BARS | 2 |
-| `26-031-NAT-M0184` | LABASSE | 2 |
-| `26-031-NAT-M0249` | CHAILLOU | 2 |
-| `25-010-NAT-M0069` | CHESNEAU | 1 |
-| `25-010-NAT-M0082` | JAMBOR | 1 |
+La description garde le nom complet, le type en clair, l'intervenant, le groupe et la salle. Le lien Teams, quand il existe, part dans le champ `URL` pour donner un bouton cliquable. Les salles fantomes d'autonomie (`SALLE_20 (0)`, capacite zero) restent dans la description mais sortent du titre.
 
 ## Utilisation
 
@@ -143,7 +116,7 @@ npm run serve
 ### Tests
 
 ```bash
-npm test        # parse un fixture reel et verifie les horaires, salles, UID
+npm test        # parse un fixture reel : horaires, salles, titres, descriptions
 npm run typecheck
 ```
 
@@ -171,15 +144,20 @@ L'URL publique est `https://airkyzzz.github.io/epsIcal/calendar.ics`.
 
 ## Deploiement
 
-Le scrape tourne quotidiennement sur le VPS `clawdbot` via systemd.
+Le scrape tourne tous les matins via GitHub Actions (`.github/workflows/scrape.yml`, cron `0 4 * * *`, soit 06:00 a Paris l'ete et 05:00 l'hiver). Il lui faut le secret `HP_ICAL_URL` :
 
 ```bash
-ssh clawdbot 'systemctl list-timers epsical-scrape.timer'   # prochain run
-ssh clawdbot 'journalctl -u epsical-scrape.service -n 50'   # logs
-ssh clawdbot 'cd /root/epsIcal && npm run scrape'           # refresh manuel
+gh secret set HP_ICAL_URL
+gh workflow run scrape && gh run watch   # run manuel
 ```
 
-Le workflow GitHub Actions (`.github/workflows/scrape.yml`) est en `workflow_dispatch` seul, comme fallback manuel. Il lui faut le secret `HP_ICAL_URL`.
+> GitHub desactive un workflow planifie apres 60 jours sans commit sur le repo. Un `workflow_dispatch` ou un commit le reactive.
+
+L'ancien timer systemd sur le VPS `clawdbot` faisait le meme travail. Garde un seul publieur pour eviter que les deux se marchent dessus :
+
+```bash
+ssh clawdbot 'systemctl disable --now epsical-scrape.timer'
+```
 
 ## Stack
 
@@ -197,9 +175,9 @@ Cree `.env` a partir de `.env.example` et colle ton URL iCal. Voir [Configuratio
 
 Le token `icalsecurise` a ete regenere. Retourne sur ton espace, reclique sur `.ical`, recopie l'adresse dans `.env`.
 
-### Les titres affichent des codes au lieu des noms
+### Un titre est coupe avec un "…"
 
-`course-names.json` est incomplet pour ces codes. Voir [Noms de cours](#noms-de-cours).
+Aucune regle ne raccourcit ce cours assez. Ajoute un libelle court dans `course-names.json`, le nom exact a copier est dans le log du run. Voir [Titres des evenements](#titres-des-evenements).
 
 ### Le calendrier semble incomplet
 

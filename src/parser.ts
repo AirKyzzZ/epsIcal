@@ -1,10 +1,10 @@
 export interface EdtEvent {
   uid: string;
-  code: string;
   course: string;
   teacher: string;
   group: string;
   room: string;
+  roomIsPlaceholder: boolean;
   start: Date;
   end: Date;
   teamsUrl: string | null;
@@ -70,12 +70,26 @@ function field(description: string, ...labels: string[]): string {
   return "";
 }
 
-function cleanRoom(raw: string): string {
-  return raw
+interface Rooms {
+  room: string;
+  isPlaceholder: boolean;
+}
+
+// Hyperplanning gives autonomy and remote slots a fake room with a capacity of
+// zero (SALLE_20 (0)). The name carries no information, so it stays out of the
+// event title.
+function cleanRooms(raw: string): Rooms {
+  const parts = raw
     .split(",")
-    .map((part) => part.replace(/\s*\(\d+\)\s*$/, "").trim())
-    .filter(Boolean)
-    .join(", ");
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const names = parts.map((part) => part.replace(/\s*\(\d+\)\s*$/, "").trim()).filter(Boolean);
+
+  return {
+    room: names.join(", "),
+    isPlaceholder: parts.length > 0 && parts.every((part) => /\(0\)\s*$/.test(part)),
+  };
 }
 
 function extractTeamsUrl(description: string): string | null {
@@ -85,9 +99,7 @@ function extractTeamsUrl(description: string): string | null {
   ).map((m) => m[0]);
 
   const teams = [...hrefs, ...bare].filter((u) => u.startsWith("https://teams.microsoft.com/"));
-  if (teams.length === 0) return null;
-
-  return Array.from(new Set(teams)).join(" | ");
+  return teams[0] ?? null;
 }
 
 export interface ParseResult {
@@ -127,6 +139,16 @@ export function parseHyperplanningIcs(ics: string): ParseResult {
   return { events, skippedAllDay };
 }
 
+// SUMMARY is "<matière> - <intervenant> - <groupe>", and plenty of course names
+// contain " - " themselves, so peel the known tail off rather than splitting.
+function courseFromSummary(summary: string, teacher: string, group: string): string {
+  let name = summary.trim();
+  for (const tail of [group, teacher]) {
+    if (tail && name.endsWith(` - ${tail}`)) name = name.slice(0, -(tail.length + 3)).trim();
+  }
+  return name;
+}
+
 function buildEvent(props: IcsProperty[]): EdtEvent | "all-day" | null {
   const get = (name: string) => props.find((p) => p.name === name);
 
@@ -143,20 +165,20 @@ function buildEvent(props: IcsProperty[]): EdtEvent | "all-day" | null {
   const description = unescapeText(get("DESCRIPTION")?.value ?? "");
   const summary = unescapeText(get("SUMMARY")?.value ?? "");
 
-  const code = field(description, "Matière") || summary.split(" - ")[0].trim();
   const teacher = field(description, "Intervenant");
   const group = field(description, "Groupe");
-  const room = cleanRoom(
+  const course = field(description, "Matière") || courseFromSummary(summary, teacher, group);
+  const rooms = cleanRooms(
     field(description, "Salles", "Salle") || unescapeText(get("LOCATION")?.value ?? "")
   );
 
   return {
     uid: get("UID")?.value ?? "",
-    code,
-    course: code,
+    course,
     teacher,
     group,
-    room,
+    room: rooms.room,
+    roomIsPlaceholder: rooms.isPlaceholder,
     start,
     end,
     teamsUrl: extractTeamsUrl(description),
@@ -166,7 +188,7 @@ function buildEvent(props: IcsProperty[]): EdtEvent | "all-day" | null {
 export function deduplicateEvents(events: EdtEvent[]): EdtEvent[] {
   const seen = new Set<string>();
   return events.filter((e) => {
-    const key = e.uid || `${e.code}|${e.start.toISOString()}`;
+    const key = e.uid || `${e.course}|${e.start.toISOString()}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
