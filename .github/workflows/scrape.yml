@@ -1,8 +1,12 @@
 name: scrape
 
-# Production runs on the clawdbot VPS (epsical-scrape.timer). This workflow is
-# kept dispatch-only as a manual fallback.
+# Hyperplanning is a plain authenticated iCal URL, so the fetch no longer needs
+# a browser or a residential IP the way the old Wigor scraper did — Actions can
+# own the daily run again. 04:00 UTC is 06:00 in Paris in summer, 05:00 in
+# winter, so the calendar is always fresh before the day starts.
 on:
+  schedule:
+    - cron: "0 4 * * *"
   workflow_dispatch: {}
 
 concurrency:
