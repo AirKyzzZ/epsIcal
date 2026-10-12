@@ -2,11 +2,10 @@ name: scrape
 
 # Hyperplanning is a plain authenticated iCal URL, so the fetch no longer needs
 # a browser or a residential IP the way the old Wigor scraper did — Actions can
-# own the daily run again. 04:00 UTC is 06:00 in Paris in summer, 05:00 in
-# winter, so the calendar is always fresh before the day starts.
+# own the scheduled run again.
 on:
   schedule:
-    - cron: "0 4 * * *"
+    - cron: "17 */3 * * *"
   workflow_dispatch: {}
 
 concurrency:
@@ -15,6 +14,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   scrape:
@@ -44,3 +44,9 @@ jobs:
         env:
           HP_ICAL_URL: ${{ secrets.HP_ICAL_URL }}
         run: npx tsx src/index.ts scrape
+
+      # GitHub disables schedules after 60 days without repo activity; this resets the clock.
+      - name: Keep schedule alive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/scrape.yml/enable"
